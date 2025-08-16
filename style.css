@@ -47,7 +47,7 @@ body {
 }
 
 .step {
-    display: none;
+    display: none; /* Começa escondido por padrão */
     background-color: var(--bg-secondary);
     border-radius: 12px;
     border: 1px solid var(--bg-tertiary);
@@ -55,7 +55,7 @@ body {
 }
 
 .step.active {
-    display: block;
+    display: block; /* Mostra apenas o passo ativo */
 }
 
 #setup-step {
@@ -160,13 +160,13 @@ input:focus, select:focus {
 
 /* --- Layout da Tela de Jogo --- */
 #game-step {
-    display: none; /* Inicia escondido */
+    display: none; /* Começa escondido */
     grid-template-columns: 2fr 1fr;
     gap: 2rem;
 }
 
 #game-step.active {
-    display: grid;
+    display: grid; /* Mostra apenas quando estiver ativo */
 }
 
 .session-container {
@@ -230,23 +230,24 @@ input[type="checkbox"] {
 #sessions-history ul { list-style: none; }
 #sessions-history li { background-color: var(--bg-tertiary); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem;}
 
-/* --- Modal --- */
+
+/* --- CORREÇÃO DO MODAL --- */
+/* A mudança está aqui. Trocamos 'opacity' e 'visibility' por 'display'. */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    display: flex;
+    display: none; /* O modal agora começa completamente removido da tela */
     justify-content: center;
     align-items: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s;
+    z-index: 1000;
 }
+
 .modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    display: flex; /* A classe 'active' faz ele aparecer */
 }
+
 .modal-content {
     background: var(--bg-secondary);
     padding: 2rem;
