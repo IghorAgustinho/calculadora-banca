@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModal = () => modal.classList.remove('active');
 
     // --- LÓGICA DA APLICAÇÃO ---
+
     const addParticipantField = () => {
         const inputDiv = document.createElement('div');
         inputDiv.className = 'participant-input';
@@ -72,58 +73,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (session.totalInvested === 0) { alert('Ninguém investiu nesta banca.'); return; }
 
-        // --- LÓGICA DE CÁLCULO DE SALDO CORRIGIDA ---
-        // 1. Calcula o resultado puro do jogo (lucro/prejuízo) para todos
         session.contributions.forEach(contrib => {
             const share = (contrib.value / session.totalInvested) * session.finalAmount;
             const profitLoss = share - contrib.value;
             appState.balances[contrib.name] += profitLoss;
         });
 
-        // 2. Ajusta os saldos com base nas dívidas (quem não pagou a entrada)
         session.contributions.forEach(contrib => {
             if (!contrib.paid && contrib.name !== session.host) {
-                // O jogador que não pagou agora deve ao Host
                 appState.balances[contrib.name] -= contrib.value;
-                // O Host tem esse valor a receber
                 appState.balances[session.host] += contrib.value;
             }
         });
-        // A lógica agora separa o resultado do jogo da dívida da entrada, evitando o erro anterior.
         
         appState.sessions.push(session);
         updateHistoryLog();
         renderCurrentSession();
     };
     
+    /**
+     * NOVO ALGORITMO DE ACERTO DE CONTAS - VERSÃO DEFINITIVA
+     * Garante que todas as dívidas e créditos sejam processados corretamente.
+     * @param {object} balances - Objeto com os saldos de cada jogador.
+     * @returns {string[]} - Array com as strings das transações.
+     */
     const calculateOptimalSettlements = (balances) => {
         const transactions = [];
-        const debtors = [];
-        const creditors = [];
+        // Clonar os balanços para não modificar o objeto original
+        const balancesToSettle = JSON.parse(JSON.stringify(balances));
 
-        Object.entries(balances).forEach(([person, balance]) => {
-            if (balance < -0.01) {
-                debtors.push({ name: person, amount: -balance });
-            } else if (balance > 0.01) {
-                creditors.push({ name: person, amount: balance });
-            }
-        });
+        // Separar credores (saldo > 0) e devedores (saldo < 0)
+        const creditors = Object.entries(balancesToSettle).filter(([_, amount]) => amount > 0);
+        const debtors = Object.entries(balancesToSettle).filter(([_, amount]) => amount < 0);
         
+        // Loop principal: continua enquanto houver dívidas a pagar e dinheiro a receber
         while (debtors.length > 0 && creditors.length > 0) {
-            const debtor = debtors[0];
-            const creditor = creditors[0];
-            const amountToTransfer = Math.min(debtor.amount, creditor.amount);
+            const [debtorName, debtorAmount] = debtors[0];
+            const [creditorName, creditorAmount] = creditors[0];
 
-            transactions.push(`<strong>${debtor.name}</strong> paga <span class="profit">R$ ${amountToTransfer.toFixed(2)}</span> para <strong>${creditor.name}</strong>`);
+            // O valor a ser transferido é o menor entre a dívida e o crédito
+            const amountToTransfer = Math.min(-debtorAmount, creditorAmount);
+
+            // Adiciona a transação à lista
+            transactions.push(`<strong>${debtorName}</strong> paga <span class="profit">R$ ${amountToTransfer.toFixed(2)}</span> para <strong>${creditorName}</strong>`);
             
-            debtor.amount -= amountToTransfer;
-            creditor.amount -= amountToTransfer;
+            // Atualiza os saldos do devedor e credor
+            debtors[0][1] += amountToTransfer;
+            creditors[0][1] -= amountToTransfer;
 
-            if (debtor.amount < 0.01) debtors.shift();
-            if (creditor.amount < 0.01) creditors.shift();
+            // Se a dívida ou crédito de alguém foi zerado, remove da lista
+            if (Math.abs(debtors[0][1]) < 0.01) {
+                debtors.shift();
+            }
+            if (Math.abs(creditors[0][1]) < 0.01) {
+                creditors.shift();
+            }
         }
         return transactions;
     };
+
 
     const calculatePlayerExit = () => {
         const leavingPlayer = exitPlayerSelect.value;
@@ -131,8 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const valueInCurrentSession = parseFloat(document.getElementById(`val-${leavingPlayer}`).value.replace(',', '.')) || 0;
         
-        const tempBalances = { ...appState.balances };
-        Object.keys(tempBalances).forEach(key => tempBalances[key] = appState.balances[key]);
+        const tempBalances = {};
+        Object.keys(appState.balances).forEach(key => tempBalances[key] = appState.balances[key]);
         
         tempBalances[leavingPlayer] += valueInCurrentSession;
         const currentHost = sessionHostSelect.value;
@@ -168,14 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.balances[currentHost] -= valueInCurrentSession;
         }
         
-        // Aplica o acerto de contas final antes de remover
-        const finalBalancesToSettle = { ...appState.balances };
-        const transactions = calculateOptimalSettlements(finalBalancesToSettle);
-        transactions.forEach(transaction => {
-            // Este passo simula o acerto, zerando as contas para o estado futuro
-            // Na prática, apenas removemos o jogador e confiamos que o acerto foi feito
-        });
-
         appState.participants = appState.participants.filter(p => p !== playerName);
         delete appState.balances[playerName];
 
@@ -187,14 +187,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const showFinalSummary = () => {
         if (appState.sessions.length === 0) { alert('Nenhuma banca foi finalizada.'); return; }
         
+        // Correção para garantir que a soma dos saldos seja exatamente zero
+        const finalBalances = { ...appState.balances };
+        const totalSum = Object.values(finalBalances).reduce((sum, val) => sum + val, 0);
+        if (Math.abs(totalSum) > 0.01) { // Se houver uma diferença de mais de 1 centavo
+            const firstPlayer = appState.participants[0];
+            finalBalances[firstPlayer] -= totalSum; // Ajusta a diferença no primeiro jogador
+        }
+
         let html = '<h2>📊 Resumo Final do Dia</h2>';
         html += '<h3>Saldo Final de Cada Um:</h3>';
-        Object.entries(appState.balances).forEach(([name, balance]) => {
+        Object.entries(finalBalances).forEach(([name, balance]) => {
             html += `<p>${name}: <strong class="${balance >= 0 ? 'profit' : 'loss'}">R$ ${balance.toFixed(2)}</strong></p>`;
         });
         html += `<hr><h3>Acerto de Contas Otimizado:</h3>`;
 
-        const transactions = calculateOptimalSettlements(appState.balances);
+        const transactions = calculateOptimalSettlements(finalBalances);
         if (transactions.length > 0) {
             html += transactions.map(t => `<p>${t}</p>`).join('');
         } else {
@@ -256,5 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal();
     };
 
+-
     initializeApp();
 });
