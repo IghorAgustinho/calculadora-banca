@@ -11,11 +11,7 @@
     --font-family: 'Inter', sans-serif;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: var(--font-family);
@@ -24,253 +20,91 @@ body {
     padding: 2rem;
 }
 
-.app-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
+.app-container { max-width: 1200px; margin: 0 auto; }
+.app-header { text-align: center; margin-bottom: 3rem; }
+.app-header h1 { font-size: 2.5rem; color: var(--accent-primary); }
+.app-header p { color: var(--text-secondary); }
 
-.app-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.app-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--accent-primary);
-    letter-spacing: 1px;
-}
-
-.app-header p {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-}
-
+/* --- CONTROLE DE VISIBILIDADE DAS ETAPAS (A CORREÇÃO PRINCIPAL ESTÁ AQUI) --- */
 .step {
-    display: none; /* Começa escondido por padrão */
-    background-color: var(--bg-secondary);
-    border-radius: 12px;
-    border: 1px solid var(--bg-tertiary);
-    overflow: hidden;
+    display: none; /* Todas as etapas começam escondidas */
 }
-
 .step.active {
-    display: block; /* Mostra apenas o passo ativo */
+    display: block; /* A etapa com a classe 'active' é exibida */
 }
+#game-step.active {
+    display: grid; /* A etapa de jogo, quando ativa, usa o layout de grid */
+}
+/* -------------------------------------------------------------------------- */
 
 #setup-step {
     max-width: 600px;
     margin: 0 auto;
     padding: 2rem;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
 }
 
-.step-header {
-    margin-bottom: 2rem;
-    text-align: center;
-}
+.step-header { margin-bottom: 2rem; text-align: center; }
+.step-header h2 { font-size: 1.8rem; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;}
+.step-header h2 span { background-color: var(--accent-primary); color: var(--bg-primary); border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.step-header p { color: var(--text-secondary); }
 
-.step-header h2 {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-}
+.participant-input-list .participant-input { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+input, select { width: 100%; padding: 0.8rem 1rem; font-size: 1rem; background-color: var(--bg-tertiary); border: 1px solid #444; border-radius: 8px; color: var(--text-primary); font-family: var(--font-family); }
+input:focus, select:focus { outline: none; border-color: var(--accent-primary); }
 
-.step-header h2 span {
-    background-color: var(--accent-primary);
-    color: var(--bg-primary);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-}
-
-.step-header p {
-    color: var(--text-secondary);
-}
-
-.participant-input-list .participant-input {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-input, select {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    background-color: var(--bg-tertiary);
-    border: 1px solid #444;
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-family: var(--font-family);
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
-
-.actions {
-    margin-top: 2rem;
-    display: flex;
-    gap: 1rem;
-}
-
-.btn {
-    flex-grow: 1;
-    padding: 0.9rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-}
-
+.actions { margin-top: 2rem; display: flex; gap: 1rem; }
+.btn { flex-grow: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease-in-out; }
 .btn-primary { background-color: var(--accent-primary); color: var(--bg-primary); }
-.btn-primary:hover { background-color: #35fbe9; }
-
 .btn-secondary { background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid #444; }
-.btn-secondary:hover { background-color: #333; }
-
 .btn-accent { background-color: var(--accent-secondary); color: var(--bg-primary); }
-.btn-accent:hover { background-color: #c99ffc; }
-
 .btn-danger { background-color: var(--danger); color: var(--bg-primary); }
-.btn-danger:hover { background-color: #d6808c; }
-
-.remove-btn {
-    background-color: var(--danger);
-    color: var(--text-primary);
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    flex-shrink: 0;
-}
+.remove-btn { background-color: var(--danger); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; }
 
 /* --- Layout da Tela de Jogo --- */
-#game-step {
-    display: none; /* Começa escondido */
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-}
+#game-step { background-color: var(--bg-secondary); border-radius: 12px; grid-template-columns: 2fr 1fr; gap: 2rem; }
+.session-container { padding: 2rem; }
+.sidebar { background-color: var(--bg-primary); padding: 2rem; border-left: 1px solid var(--bg-tertiary); }
+.sidebar-block { margin-bottom: 2.5rem; }
+.sidebar-block h3 { font-size: 1.3rem; color: var(--accent-secondary); margin-bottom: 1rem; border-bottom: 1px solid var(--bg-tertiary); padding-bottom: 0.5rem; }
 
-#game-step.active {
-    display: grid; /* Mostra apenas quando estiver ativo */
-}
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 600; }
 
-.session-container {
-    padding: 2rem;
-}
+.contribution-item { display: grid; grid-template-columns: 1fr 1fr 100px; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.checkbox-container { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-primary); }
 
-.sidebar {
-    background-color: var(--bg-primary);
-    padding: 2rem;
-    border-left: 1px solid var(--bg-tertiary);
-}
-
-.sidebar-block {
-    margin-bottom: 2.5rem;
-}
-
-.sidebar-block h3 {
-    font-size: 1.3rem;
-    color: var(--accent-secondary);
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--bg-tertiary);
-    padding-bottom: 0.5rem;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.contribution-item {
-    display: grid;
-    grid-template-columns: 1fr 1fr 100px;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.checkbox-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--accent-primary);
-}
-
-#sessions-history .empty-state {
-    color: var(--text-secondary);
-    font-style: italic;
-}
+#sessions-history .empty-state { color: var(--text-secondary); font-style: italic; }
 #sessions-history ul { list-style: none; }
 #sessions-history li { background-color: var(--bg-tertiary); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem;}
 
-
-/* --- CORREÇÃO DO MODAL --- */
-/* A mudança está aqui. Trocamos 'opacity' e 'visibility' por 'display'. */
+/* --- CONTROLE DE VISIBILIDADE DO MODAL (A CORREÇÃO PRINCIPAL ESTÁ AQUI) --- */
 .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
+    position: fixed; top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    display: none; /* O modal agora começa completamente removido da tela */
+    z-index: 1000;
+    display: none; /* O modal começa completamente escondido */
     justify-content: center;
     align-items: center;
-    z-index: 1000;
 }
-
 .modal-overlay.active {
     display: flex; /* A classe 'active' faz ele aparecer */
 }
+/* ----------------------------------------------------------------------------- */
 
-.modal-content {
-    background: var(--bg-secondary);
-    padding: 2rem;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    position: relative;
-    border: 1px solid var(--bg-tertiary);
-}
+.modal-content { background: var(--bg-secondary); padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; position: relative; border: 1px solid var(--bg-tertiary); }
 .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; }
 #modal-body h2, #modal-body h3 { text-align: left; }
 #modal-body h3 { color: var(--accent-secondary); }
 #modal-body p { padding: 0.75rem 0; border-bottom: 1px solid var(--bg-tertiary); }
 
-.profit { color: var(--success); font-weight: 600; }
-.loss { color: var(--danger); font-weight: 600; }
+.profit { color: var(--success); }
+.loss { color: var(--danger); }
 
 @media (max-width: 900px) {
-    #game-step.active {
-        grid-template-columns: 1fr;
-    }
-    .sidebar {
-        border-left: none;
-        border-top: 1px solid var(--bg-tertiary);
-    }
+    #game-step.active { grid-template-columns: 1fr; }
+    .sidebar { border-left: none; border-top: 1px solid var(--bg-tertiary); }
 }

@@ -6,31 +6,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupStep = document.getElementById('setup-step');
     const gameStep = document.getElementById('game-step');
     const modal = document.getElementById('modal');
-    
-    // Configuração
     const participantsListDiv = document.getElementById('participants-list');
     const addParticipantBtn = document.getElementById('add-participant-btn');
     const startDayBtn = document.getElementById('start-day-btn');
-
-    // Jogo
     const sessionTitle = document.getElementById('session-title');
     const sessionHostSelect = document.getElementById('session-host-select');
     const currentSessionPlayersDiv = document.getElementById('current-session-players');
     const finalAmountInput = document.getElementById('final-amount');
     const endSessionBtn = document.getElementById('end-session-btn');
     const sessionsHistoryDiv = document.getElementById('sessions-history');
-
-    // Gerenciamento
     const exitPlayerSelect = document.getElementById('exit-player-select');
     const calculateExitBtn = document.getElementById('calculate-exit-btn');
     const showSummaryBtn = document.getElementById('show-summary-btn');
     const resetDayBtn = document.getElementById('reset-day-btn');
-
-    // Modal
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalBody = document.getElementById('modal-body');
 
-    // --- FUNÇÕES PRINCIPAIS E EVENTOS ---
+    // --- FUNÇÕES DE CONTROLE DE VISIBILIDADE ---
+
+    const switchStep = (stepToShow) => {
+        setupStep.classList.remove('active');
+        gameStep.classList.remove('active');
+        if (stepToShow === 'game') {
+            gameStep.classList.add('active');
+        } else {
+            setupStep.classList.add('active');
+        }
+    };
+
+    const showModal = (content) => {
+        modalBody.innerHTML = content;
+        modal.classList.add('active');
+    };
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+    };
+
+    // --- LÓGICA DA APLICAÇÃO ---
 
     const addParticipantField = () => {
         const inputDiv = document.createElement('div');
@@ -44,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(input => input.value.trim()).filter(Boolean))];
         
         if (names.length < 2) {
-            alert('São necessários pelo menos 2 participantes com nomes preenchidos.');
+            alert('São necessários pelo menos 2 participantes.');
             return;
         }
 
@@ -52,9 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.sessions = [];
         appState.balances = Object.fromEntries(names.map(name => [name, 0]));
 
-        setupStep.classList.remove('active');
-        gameStep.classList.add('active');
-        
+        switchStep('game');
         updatePlayerDropdowns();
         renderCurrentSession();
     };
@@ -62,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const endSession = () => {
         const finalAmount = parseFloat(finalAmountInput.value.replace(',', '.')) || 0;
         const host = sessionHostSelect.value;
-
         if (!host) { alert('Selecione o Host desta banca.'); return; }
 
         const session = { host, finalAmount, contributions: [], totalInvested: 0 };
@@ -93,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHistoryLog();
         renderCurrentSession();
     };
-
+    
     const calculatePlayerExit = () => {
         const leavingPlayer = exitPlayerSelect.value;
         if (!leavingPlayer) return;
@@ -106,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = `<h2>Resumo de Saída para ${leavingPlayer}</h2>`;
         html += `<p>Saldo das bancas finalizadas: <strong class="${balanceFromSessions >= 0 ? 'profit' : 'loss'}">R$ ${balanceFromSessions.toFixed(2)}</strong></p>`;
         html += `<p>Valor a ser devolvido da banca atual: <strong>R$ ${valueInCurrentSession.toFixed(2)}</strong></p>`;
-        html += `<hr><p><strong>TOTAL A ACERTAR: R$ ${Math.abs(totalToSettle).toFixed(2)}</strong></p><hr>`;
+        html += `<hr style="border-color: var(--bg-tertiary); margin: 1rem 0;"><p><strong>TOTAL A ACERTAR: R$ ${Math.abs(totalToSettle).toFixed(2)}</strong></p><hr style="border-color: var(--bg-tertiary); margin: 1rem 0;">`;
 
         if (totalToSettle > 0) {
             html += `<h3><strong class="profit">${currentHost} (Host) deve pagar R$ ${totalToSettle.toFixed(2)} para ${leavingPlayer}.</strong></h3>`;
@@ -120,19 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showFinalSummary = () => {
-        if (appState.sessions.length === 0) {
-            alert('Nenhuma banca foi finalizada.');
-            return;
-        }
-        let html = '<h2>📊 Resumo Final do Dia</h2>';
-        html += '<h3>Saldo Final de Cada Um:</h3>';
+        if (appState.sessions.length === 0) { alert('Nenhuma banca foi finalizada.'); return; }
+        let html = '<h2>📊 Resumo Final do Dia</h2><h3>Saldo Final de Cada Um:</h3>';
         Object.entries(appState.balances).forEach(([name, balance]) => {
             html += `<p>${name}: <strong class="${balance >= 0 ? 'profit' : 'loss'}">R$ ${balance.toFixed(2)}</strong></p>`;
         });
         showModal(html);
     };
 
-    // --- FUNÇÕES AUXILIARES DE RENDERIZAÇÃO ---
     const renderCurrentSession = () => {
         sessionTitle.innerText = `Banca #${appState.sessions.length + 1}`;
         currentSessionPlayersDiv.innerHTML = appState.participants.map(name => `
@@ -165,33 +170,28 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionsHistoryDiv.innerHTML = `<ul>${historyHTML}</ul>`;
     };
 
-    const showModal = (content) => {
-        modalBody.innerHTML = content;
-        modal.classList.add('active');
+    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+    const initializeApp = () => {
+        addParticipantBtn.addEventListener('click', addParticipantField);
+        participantsListDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove();
+        });
+        startDayBtn.addEventListener('click', startDay);
+        endSessionBtn.addEventListener('click', endSession);
+        calculateExitBtn.addEventListener('click', calculatePlayerExit);
+        showSummaryBtn.addEventListener('click', showFinalSummary);
+        resetDayBtn.addEventListener('click', () => {
+            if (confirm('Tem certeza? Isso vai apagar todos os dados.')) window.location.reload();
+        });
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        // Garante o estado inicial correto da interface
+        addParticipantField();
+        addParticipantField();
+        switchStep('setup'); // Força a exibição APENAS da tela de setup
+        closeModal(); // Força o modal a ficar escondido
     };
 
-    // --- EVENT LISTENERS ---
-    addParticipantBtn.addEventListener('click', addParticipantField);
-    participantsListDiv.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-btn')) {
-            e.target.parentElement.remove();
-        }
-    });
-    startDayBtn.addEventListener('click', startDay);
-    endSessionBtn.addEventListener('click', endSession);
-    calculateExitBtn.addEventListener('click', calculatePlayerExit);
-    showSummaryBtn.addEventListener('click', showFinalSummary);
-    resetDayBtn.addEventListener('click', () => {
-        if (confirm('Tem certeza que deseja apagar TODOS os dados e começar de novo?')) {
-            window.location.reload();
-        }
-    });
-    modalCloseBtn.addEventListener('click', () => modal.classList.remove('active'));
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('active');
-    });
-
-    // Inicia a aplicação adicionando os dois primeiros campos de participante.
-    addParticipantField();
-    addParticipantField();
+    initializeApp(); // Roda a função de inicialização
 });
