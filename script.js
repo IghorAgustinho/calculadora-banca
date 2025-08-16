@@ -22,16 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalBody = document.getElementById('modal-body');
 
-    // --- FUNÇÕES DE CONTROLE DE VISIBILIDADE ---
+    // --- LÓGICA DE CONTROLE E ESTADO ---
 
     const switchStep = (stepToShow) => {
         setupStep.classList.remove('active');
         gameStep.classList.remove('active');
-        if (stepToShow === 'game') {
-            gameStep.classList.add('active');
-        } else {
-            setupStep.classList.add('active');
-        }
+        if (stepToShow === 'game') gameStep.classList.add('active');
+        else setupStep.classList.add('active');
     };
 
     const showModal = (content) => {
@@ -39,11 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
     };
 
-    const closeModal = () => {
-        modal.classList.remove('active');
-    };
-
-    // --- LÓGICA DA APLICAÇÃO ---
+    const closeModal = () => modal.classList.remove('active');
 
     const addParticipantField = () => {
         const inputDiv = document.createElement('div');
@@ -55,11 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startDay = () => {
         const names = [...new Set(Array.from(participantsListDiv.querySelectorAll('input'))
             .map(input => input.value.trim()).filter(Boolean))];
-        
-        if (names.length < 2) {
-            alert('São necessários pelo menos 2 participantes.');
-            return;
-        }
+        if (names.length < 2) { alert('São necessários pelo menos 2 participantes.'); return; }
 
         appState.participants = names;
         appState.sessions = [];
@@ -104,51 +93,139 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentSession();
     };
     
+    /**
+     * NOVO ALGORITMO DE ACERTO DE CONTAS OTIMIZADO
+     * Calcula o menor número de transações para zerar as dívidas.
+     * @param {object} balances - Objeto com os saldos de cada jogador. Ex: { 'Fulano': 50, 'Ciclano': -120, 'Beltrano': 70 }
+     * @returns {string[]} - Um array de strings descrevendo as transações. Ex: ["Ciclano paga R$ 70.00 para Beltrano"]
+     */
+    const calculateOptimalSettlements = (balances) => {
+        const transactions = [];
+        const debtors = [];
+        const creditors = [];
+
+        // Separa jogadores em devedores e credores
+        for (const person in balances) {
+            const balance = balances[person];
+            if (balance < 0) {
+                debtors.push({ name: person, amount: -balance });
+            } else if (balance > 0) {
+                creditors.push({ name: person, amount: balance });
+            }
+        }
+        
+        // Enquanto houver devedores e credores, realiza as transações
+        while (debtors.length > 0 && creditors.length > 0) {
+            const debtor = debtors[0];
+            const creditor = creditors[0];
+            const amountToTransfer = Math.min(debtor.amount, creditor.amount);
+
+            transactions.push(`<strong>${debtor.name}</strong> paga <span class="profit">R$ ${amountToTransfer.toFixed(2)}</span> para <strong>${creditor.name}</strong>`);
+            
+            debtor.amount -= amountToTransfer;
+            creditor.amount -= amountToTransfer;
+
+            // Remove da lista quem já zerou a conta
+            if (debtor.amount < 0.01) debtors.shift();
+            if (creditor.amount < 0.01) creditors.shift();
+        }
+        return transactions;
+    };
+
     const calculatePlayerExit = () => {
         const leavingPlayer = exitPlayerSelect.value;
         if (!leavingPlayer) return;
 
-        const currentHost = sessionHostSelect.value;
-        const balanceFromSessions = appState.balances[leavingPlayer];
         const valueInCurrentSession = parseFloat(document.getElementById(`val-${leavingPlayer}`).value.replace(',', '.')) || 0;
-        const totalToSettle = balanceFromSessions + valueInCurrentSession;
+        
+        // Cria uma cópia temporária dos balanços para simular a saída
+        const tempBalances = { ...appState.balances };
+        // Devolve o dinheiro da sessão atual para o jogador que está saindo
+        tempBalances[leavingPlayer] += valueInCurrentSession;
+        // O host da sessão atual "paga" por essa devolução no cálculo temporário
+        const currentHost = sessionHostSelect.value;
+        if (leavingPlayer !== currentHost) {
+            tempBalances[currentHost] -= valueInCurrentSession;
+        }
+
+        const transactions = calculateOptimalSettlements(tempBalances);
         
         let html = `<h2>Resumo de Saída para ${leavingPlayer}</h2>`;
-        html += `<p>Saldo das bancas finalizadas: <strong class="${balanceFromSessions >= 0 ? 'profit' : 'loss'}">R$ ${balanceFromSessions.toFixed(2)}</strong></p>`;
-        html += `<p>Valor a ser devolvido da banca atual: <strong>R$ ${valueInCurrentSession.toFixed(2)}</strong></p>`;
-        html += `<hr style="border-color: var(--bg-tertiary); margin: 1rem 0;"><p><strong>TOTAL A ACERTAR: R$ ${Math.abs(totalToSettle).toFixed(2)}</strong></p><hr style="border-color: var(--bg-tertiary); margin: 1rem 0;">`;
-
-        if (totalToSettle > 0) {
-            html += `<h3><strong class="profit">${currentHost} (Host) deve pagar R$ ${totalToSettle.toFixed(2)} para ${leavingPlayer}.</strong></h3>`;
-        } else if (totalToSettle < 0) {
-            html += `<h3><strong class="loss">${leavingPlayer} deve pagar R$ ${Math.abs(totalToSettle).toFixed(2)} para ${currentHost} (Host).</strong></h3>`;
+        const finalBalance = appState.balances[leavingPlayer] + valueInCurrentSession;
+        html += `<p>Saldo Final do Jogador: <strong class="${finalBalance >= 0 ? 'profit' : 'loss'}">R$ ${finalBalance.toFixed(2)}</strong></p><hr>`;
+        html += `<h3>Transações para Zerar a Conta:</h3>`;
+        
+        const playerTransactions = transactions.filter(t => t.includes(leavingPlayer));
+        if (playerTransactions.length > 0) {
+            html += playerTransactions.map(t => `<p>${t}</p>`).join('');
         } else {
-            html += `<h3>As contas estão zeradas.</h3>`;
+            html += `<p>As contas estão zeradas. Ninguém deve nada.</p>`;
         }
+
+        // Adiciona o novo botão para confirmar a saída
+        html += `<button id="confirm-exit-btn" class="btn btn-danger" data-player-exit="${leavingPlayer}">Confirmar Saída e Acerto</button>`;
         
         showModal(html);
     };
 
+    // Função para lidar com a confirmação da saída do jogador
+    const confirmPlayerExit = (playerName) => {
+        // Recalcula a devolução para atualizar o estado permanentemente
+        const valueInCurrentSession = parseFloat(document.getElementById(`val-${playerName}`).value.replace(',', '.')) || 0;
+        const currentHost = sessionHostSelect.value;
+
+        // Atualiza os balanços permanentemente
+        appState.balances[playerName] += valueInCurrentSession;
+        if (playerName !== currentHost) {
+            appState.balances[currentHost] -= valueInCurrentSession;
+        }
+
+        // Remove o jogador da lista de participantes ativos
+        appState.participants = appState.participants.filter(p => p !== playerName);
+        
+        // Zera o saldo do jogador que saiu
+        delete appState.balances[playerName];
+
+        closeModal();
+        updatePlayerDropdowns();
+        renderCurrentSession();
+    };
+    
     const showFinalSummary = () => {
         if (appState.sessions.length === 0) { alert('Nenhuma banca foi finalizada.'); return; }
-        let html = '<h2>📊 Resumo Final do Dia</h2><h3>Saldo Final de Cada Um:</h3>';
+        
+        let html = '<h2>📊 Resumo Final do Dia</h2>';
+        html += '<h3>Saldo Final de Cada Um:</h3>';
         Object.entries(appState.balances).forEach(([name, balance]) => {
             html += `<p>${name}: <strong class="${balance >= 0 ? 'profit' : 'loss'}">R$ ${balance.toFixed(2)}</strong></p>`;
         });
+        html += `<hr><h3>Acerto de Contas Otimizado:</h3>`;
+
+        const transactions = calculateOptimalSettlements(appState.balances);
+        if (transactions.length > 0) {
+            html += transactions.map(t => `<p>${t}</p>`).join('');
+        } else {
+            html += `<p>Contas zeradas. Ninguém deve nada.</p>`;
+        }
         showModal(html);
     };
 
     const renderCurrentSession = () => {
         sessionTitle.innerText = `Banca #${appState.sessions.length + 1}`;
-        currentSessionPlayersDiv.innerHTML = appState.participants.map(name => `
-            <div class="contribution-item">
+        currentSessionPlayersDiv.innerHTML = '';
+        // Renderiza apenas os jogadores que ainda estão ativos
+        appState.participants.forEach(name => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'contribution-item';
+            playerDiv.innerHTML = `
                 <label for="val-${name}">${name}:</label>
                 <input type="number" id="val-${name}" placeholder="0.00">
                 <div class="checkbox-container">
                     <input type="checkbox" id="paid-${name}" checked>
                     <label for="paid-${name}">Pagou</label>
-                </div>
-            </div>`).join('');
+                </div>`;
+            currentSessionPlayersDiv.appendChild(playerDiv);
+        });
         finalAmountInput.value = '';
     };
 
@@ -170,28 +247,34 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionsHistoryDiv.innerHTML = `<ul>${historyHTML}</ul>`;
     };
 
-    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+    // --- INICIALIZAÇÃO E EVENT LISTENERS ---
+    
     const initializeApp = () => {
+        // Listeners Padrão
         addParticipantBtn.addEventListener('click', addParticipantField);
-        participantsListDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove();
-        });
+        participantsListDiv.addEventListener('click', (e) => { if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove(); });
         startDayBtn.addEventListener('click', startDay);
         endSessionBtn.addEventListener('click', endSession);
         calculateExitBtn.addEventListener('click', calculatePlayerExit);
         showSummaryBtn.addEventListener('click', showFinalSummary);
-        resetDayBtn.addEventListener('click', () => {
-            if (confirm('Tem certeza? Isso vai apagar todos os dados.')) window.location.reload();
-        });
+        resetDayBtn.addEventListener('click', () => { if (confirm('Tem certeza?')) window.location.reload(); });
+        
+        // Listeners do Modal
         modalCloseBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+            // Listener para o novo botão de confirmar saída
+            if (e.target.id === 'confirm-exit-btn') {
+                const playerName = e.target.dataset.playerExit;
+                confirmPlayerExit(playerName);
+            }
+        });
 
-        // Garante o estado inicial correto da interface
         addParticipantField();
         addParticipantField();
-        switchStep('setup'); // Força a exibição APENAS da tela de setup
-        closeModal(); // Força o modal a ficar escondido
+        switchStep('setup');
+        closeModal();
     };
 
-    initializeApp(); // Roda a função de inicialização
+    initializeApp();
 });
