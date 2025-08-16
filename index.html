@@ -3,41 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Banca</title>
+    <title>Gerenciador de Jogo Flexível</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
-        <h1>Calculadora de Banca Compartilhada</h1>
+        <h1>Gerenciador de Jogo Flexível</h1>
 
-        <div class="card">
-            <h2>Jogadores</h2>
-            <div id="players-list">
+        <div id="setup-container" class="card">
+            <h2>1. Configuração do Dia</h2>
+            <div class="input-group">
+                <label>Participantes do Dia:</label>
+                <div id="participants-list">
+                    <div class="participant-input"><input type="text" placeholder="Nome do participante 1"></div>
+                    <div class="participant-input"><input type="text" placeholder="Nome do participante 2"></div>
                 </div>
-            <button id="add-player-btn" class="btn">Adicionar Jogador</button>
+                <button id="add-participant-btn" class="btn">Adicionar Participante</button>
+            </div>
+            <button id="start-day-btn" class="btn btn-primary">Iniciar Dia de Jogo</button>
         </div>
 
-        <div class="card">
-            <h2>Resultado da Sessão</h2>
-            <div class="input-group">
-                <label for="final-amount">Quanto sobrou na banca (R$)?</label>
-                <input type="number" id="final-amount" placeholder="Ex: 900.50">
+        <div id="game-container" class="hidden">
+            <div class="card">
+                <h2 id="session-title">Banca Atual</h2>
+                <div class="input-group">
+                    <label for="session-host-select">Host desta Banca:</label>
+                    <select id="session-host-select" class="input-like"></select>
+                </div>
+                <div id="current-session-players"></div>
+                <div class="input-group">
+                    <label for="final-amount">Quanto sobrou nesta banca (R$)?</label>
+                    <input type="number" id="final-amount" placeholder="Ex: 0">
+                </div>
+                <button id="end-session-btn" class="btn">Finalizar Banca e Iniciar Próxima</button>
+            </div>
+
+            <div class="card">
+                <h2>Histórico do Dia</h2>
+                <div id="sessions-history"><p>Nenhuma banca finalizada ainda.</p></div>
+            </div>
+
+            <div class="card">
+                <h2>Gerenciamento do Dia</h2>
+                <div class="input-group">
+                    <label for="exit-player-select">Calcular saída de um jogador:</label>
+                    <div class="exit-group">
+                        <select id="exit-player-select" class="input-like"></select>
+                        <button id="calculate-exit-btn" class="btn">Calcular Saída</button>
+                    </div>
+                </div>
+                 <button id="show-summary-btn" class="btn btn-primary">Encerrar o Dia (Resumo Final)</button>
+                 <button id="reset-day-btn" class="btn btn-secondary">Resetar Dia Inteiro</button>
             </div>
         </div>
 
-        <div class="actions">
-            <button id="calculate-btn" class="btn btn-primary">Calcular Divisão</button>
-            <button id="reset-btn" class="btn btn-secondary">Nova Sessão (Limpar)</button>
-        </div>
-
-        <div id="results-container" class="card results-hidden">
-            <h2>📊 Resumo da Sessão</h2>
-            <div id="summary"></div>
-            <div id="player-results"></div>
+        <div id="modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button id="modal-close-btn" class="modal-close">&times;</button>
+                <div id="modal-body"></div>
+            </div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
