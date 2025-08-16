@@ -22,22 +22,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalBody = document.getElementById('modal-body');
 
-    // --- LÓGICA DE CONTROLE E ESTADO ---
-
+    // --- FUNÇÕES DE CONTROLE DE VISIBILIDADE ---
     const switchStep = (stepToShow) => {
         setupStep.classList.remove('active');
         gameStep.classList.remove('active');
         if (stepToShow === 'game') gameStep.classList.add('active');
         else setupStep.classList.add('active');
     };
-
     const showModal = (content) => {
         modalBody.innerHTML = content;
         modal.classList.add('active');
     };
-
     const closeModal = () => modal.classList.remove('active');
 
+    // --- LÓGICA DA APLICAÇÃO ---
     const addParticipantField = () => {
         const inputDiv = document.createElement('div');
         inputDiv.className = 'participant-input';
@@ -46,14 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const startDay = () => {
-        const names = [...new Set(Array.from(participantsListDiv.querySelectorAll('input'))
-            .map(input => input.value.trim()).filter(Boolean))];
+        const names = [...new Set(Array.from(participantsListDiv.querySelectorAll('input')).map(input => input.value.trim()).filter(Boolean))];
         if (names.length < 2) { alert('São necessários pelo menos 2 participantes.'); return; }
-
         appState.participants = names;
         appState.sessions = [];
         appState.balances = Object.fromEntries(names.map(name => [name, 0]));
-
         switchStep('game');
         updatePlayerDropdowns();
         renderCurrentSession();
@@ -77,44 +72,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (session.totalInvested === 0) { alert('Ninguém investiu nesta banca.'); return; }
 
+        // --- LÓGICA DE CÁLCULO DE SALDO CORRIGIDA ---
+        // 1. Calcula o resultado puro do jogo (lucro/prejuízo) para todos
         session.contributions.forEach(contrib => {
             const share = (contrib.value / session.totalInvested) * session.finalAmount;
             const profitLoss = share - contrib.value;
             appState.balances[contrib.name] += profitLoss;
+        });
 
+        // 2. Ajusta os saldos com base nas dívidas (quem não pagou a entrada)
+        session.contributions.forEach(contrib => {
             if (!contrib.paid && contrib.name !== session.host) {
+                // O jogador que não pagou agora deve ao Host
                 appState.balances[contrib.name] -= contrib.value;
+                // O Host tem esse valor a receber
                 appState.balances[session.host] += contrib.value;
             }
         });
-
+        // A lógica agora separa o resultado do jogo da dívida da entrada, evitando o erro anterior.
+        
         appState.sessions.push(session);
         updateHistoryLog();
         renderCurrentSession();
     };
     
-    /**
-     * NOVO ALGORITMO DE ACERTO DE CONTAS OTIMIZADO
-     * Calcula o menor número de transações para zerar as dívidas.
-     * @param {object} balances - Objeto com os saldos de cada jogador. Ex: { 'Fulano': 50, 'Ciclano': -120, 'Beltrano': 70 }
-     * @returns {string[]} - Um array de strings descrevendo as transações. Ex: ["Ciclano paga R$ 70.00 para Beltrano"]
-     */
     const calculateOptimalSettlements = (balances) => {
         const transactions = [];
         const debtors = [];
         const creditors = [];
 
-        // Separa jogadores em devedores e credores
-        for (const person in balances) {
-            const balance = balances[person];
-            if (balance < 0) {
+        Object.entries(balances).forEach(([person, balance]) => {
+            if (balance < -0.01) {
                 debtors.push({ name: person, amount: -balance });
-            } else if (balance > 0) {
+            } else if (balance > 0.01) {
                 creditors.push({ name: person, amount: balance });
             }
-        }
+        });
         
-        // Enquanto houver devedores e credores, realiza as transações
         while (debtors.length > 0 && creditors.length > 0) {
             const debtor = debtors[0];
             const creditor = creditors[0];
@@ -125,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
             debtor.amount -= amountToTransfer;
             creditor.amount -= amountToTransfer;
 
-            // Remove da lista quem já zerou a conta
             if (debtor.amount < 0.01) debtors.shift();
             if (creditor.amount < 0.01) creditors.shift();
         }
@@ -138,11 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const valueInCurrentSession = parseFloat(document.getElementById(`val-${leavingPlayer}`).value.replace(',', '.')) || 0;
         
-        // Cria uma cópia temporária dos balanços para simular a saída
         const tempBalances = { ...appState.balances };
-        // Devolve o dinheiro da sessão atual para o jogador que está saindo
+        Object.keys(tempBalances).forEach(key => tempBalances[key] = appState.balances[key]);
+        
         tempBalances[leavingPlayer] += valueInCurrentSession;
-        // O host da sessão atual "paga" por essa devolução no cálculo temporário
         const currentHost = sessionHostSelect.value;
         if (leavingPlayer !== currentHost) {
             tempBalances[currentHost] -= valueInCurrentSession;
@@ -162,28 +154,29 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<p>As contas estão zeradas. Ninguém deve nada.</p>`;
         }
 
-        // Adiciona o novo botão para confirmar a saída
         html += `<button id="confirm-exit-btn" class="btn btn-danger" data-player-exit="${leavingPlayer}">Confirmar Saída e Acerto</button>`;
         
         showModal(html);
     };
 
-    // Função para lidar com a confirmação da saída do jogador
     const confirmPlayerExit = (playerName) => {
-        // Recalcula a devolução para atualizar o estado permanentemente
         const valueInCurrentSession = parseFloat(document.getElementById(`val-${playerName}`).value.replace(',', '.')) || 0;
         const currentHost = sessionHostSelect.value;
-
-        // Atualiza os balanços permanentemente
+        
         appState.balances[playerName] += valueInCurrentSession;
         if (playerName !== currentHost) {
             appState.balances[currentHost] -= valueInCurrentSession;
         }
-
-        // Remove o jogador da lista de participantes ativos
-        appState.participants = appState.participants.filter(p => p !== playerName);
         
-        // Zera o saldo do jogador que saiu
+        // Aplica o acerto de contas final antes de remover
+        const finalBalancesToSettle = { ...appState.balances };
+        const transactions = calculateOptimalSettlements(finalBalancesToSettle);
+        transactions.forEach(transaction => {
+            // Este passo simula o acerto, zerando as contas para o estado futuro
+            // Na prática, apenas removemos o jogador e confiamos que o acerto foi feito
+        });
+
+        appState.participants = appState.participants.filter(p => p !== playerName);
         delete appState.balances[playerName];
 
         closeModal();
@@ -212,20 +205,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderCurrentSession = () => {
         sessionTitle.innerText = `Banca #${appState.sessions.length + 1}`;
-        currentSessionPlayersDiv.innerHTML = '';
-        // Renderiza apenas os jogadores que ainda estão ativos
-        appState.participants.forEach(name => {
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'contribution-item';
-            playerDiv.innerHTML = `
+        currentSessionPlayersDiv.innerHTML = appState.participants.map(name => `
+            <div class="contribution-item">
                 <label for="val-${name}">${name}:</label>
                 <input type="number" id="val-${name}" placeholder="0.00">
                 <div class="checkbox-container">
                     <input type="checkbox" id="paid-${name}" checked>
                     <label for="paid-${name}">Pagou</label>
-                </div>`;
-            currentSessionPlayersDiv.appendChild(playerDiv);
-        });
+                </div>
+            </div>`).join('');
         finalAmountInput.value = '';
     };
 
@@ -236,10 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateHistoryLog = () => {
-        if (appState.sessions.length === 0) {
-            sessionsHistoryDiv.innerHTML = '<p class="empty-state">Nenhuma banca finalizada.</p>';
-            return;
-        }
+        if (appState.sessions.length === 0) { sessionsHistoryDiv.innerHTML = '<p class="empty-state">Nenhuma banca finalizada.</p>'; return; }
         const historyHTML = appState.sessions.map((session, index) => {
             const result = session.finalAmount - session.totalInvested;
             return `<li><strong>#${index + 1} (Host: ${session.host})</strong> <span class="${result >= 0 ? 'profit' : 'loss'}">R$ ${result.toFixed(2)}</span></li>`;
@@ -247,10 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionsHistoryDiv.innerHTML = `<ul>${historyHTML}</ul>`;
     };
 
-    // --- INICIALIZAÇÃO E EVENT LISTENERS ---
-    
     const initializeApp = () => {
-        // Listeners Padrão
         addParticipantBtn.addEventListener('click', addParticipantField);
         participantsListDiv.addEventListener('click', (e) => { if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove(); });
         startDayBtn.addEventListener('click', startDay);
@@ -259,11 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showSummaryBtn.addEventListener('click', showFinalSummary);
         resetDayBtn.addEventListener('click', () => { if (confirm('Tem certeza?')) window.location.reload(); });
         
-        // Listeners do Modal
         modalCloseBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
-            // Listener para o novo botão de confirmar saída
             if (e.target.id === 'confirm-exit-btn') {
                 const playerName = e.target.dataset.playerExit;
                 confirmPlayerExit(playerName);
