@@ -1,29 +1,275 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+:root {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-tertiary: #2a2a2a;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --accent-primary: #03DAC6; /* Teal */
+    --accent-secondary: #BB86FC; /* Purple */
+    --danger: #CF6679;
+    --success: #66bb6a;
+    --font-family: 'Inter', sans-serif;
+}
 
-body { font-family: 'Roboto', sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-.container { width: 100%; max-width: 700px; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-h1, h2, h3 { text-align: center; color: #1a2c50; }
-h2 { border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-top: 0; }
-.card { background-color: #f8f9fa; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
-.input-group { margin-bottom: 15px; }
-.participant-input, .contribution-input { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
-.contribution-input label { font-weight: bold; flex-basis: 120px; flex-shrink: 0; }
-.payment-status { display: flex; align-items: center; gap: 5px; }
-input[type="text"], input[type="number"], select.input-like { padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; font-family: 'Roboto', sans-serif; background: white; }
-label { margin-bottom: 5px; font-weight: bold; display: block; }
-.btn { padding: 12px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; display: block; width: 100%; text-align: center; margin-top: 10px; }
-.btn-primary { background-color: #007bff; color: white; }
-.btn-secondary { background-color: #6c757d; color: white; }
-.exit-group { display: flex; gap: 10px; }
-.hidden { display: none; }
-#sessions-history ul { list-style-type: none; padding: 0; }
-#sessions-history li { background-color: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
-.profit { color: #28a745; }
-.loss { color: #dc3545; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-/* Estilos do Modal */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 500px; position: relative; }
-.modal-close { position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; border: none; background: none; cursor: pointer; }
-#modal-body h3 { margin-top: 0; }
-#modal-body p { font-size: 1.1em; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 2rem;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.app-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.app-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    letter-spacing: 1px;
+}
+
+.app-header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.step {
+    display: none;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.step.active {
+    display: block;
+}
+
+#setup-step {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.step-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.step-header h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.step-header h2 span {
+    background-color: var(--accent-primary);
+    color: var(--bg-primary);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.step-header p {
+    color: var(--text-secondary);
+}
+
+.participant-input-list .participant-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+input, select {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    background-color: var(--bg-tertiary);
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    flex-grow: 1;
+    padding: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary { background-color: var(--accent-primary); color: var(--bg-primary); }
+.btn-primary:hover { background-color: #35fbe9; }
+
+.btn-secondary { background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid #444; }
+.btn-secondary:hover { background-color: #333; }
+
+.btn-accent { background-color: var(--accent-secondary); color: var(--bg-primary); }
+.btn-accent:hover { background-color: #c99ffc; }
+
+.btn-danger { background-color: var(--danger); color: var(--bg-primary); }
+.btn-danger:hover { background-color: #d6808c; }
+
+.remove-btn {
+    background-color: var(--danger);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* --- Layout da Tela de Jogo --- */
+#game-step {
+    display: none; /* Inicia escondido */
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+#game-step.active {
+    display: grid;
+}
+
+.session-container {
+    padding: 2rem;
+}
+
+.sidebar {
+    background-color: var(--bg-primary);
+    padding: 2rem;
+    border-left: 1px solid var(--bg-tertiary);
+}
+
+.sidebar-block {
+    margin-bottom: 2.5rem;
+}
+
+.sidebar-block h3 {
+    font-size: 1.3rem;
+    color: var(--accent-secondary);
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+    padding-bottom: 0.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.contribution-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 100px;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+}
+
+#sessions-history .empty-state {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+#sessions-history ul { list-style: none; }
+#sessions-history li { background-color: var(--bg-tertiary); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem;}
+
+/* --- Modal --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    border: 1px solid var(--bg-tertiary);
+}
+.modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; }
+#modal-body h2, #modal-body h3 { text-align: left; }
+#modal-body h3 { color: var(--accent-secondary); }
+#modal-body p { padding: 0.75rem 0; border-bottom: 1px solid var(--bg-tertiary); }
+
+.profit { color: var(--success); font-weight: 600; }
+.loss { color: var(--danger); font-weight: 600; }
+
+@media (max-width: 900px) {
+    #game-step.active {
+        grid-template-columns: 1fr;
+    }
+    .sidebar {
+        border-left: none;
+        border-top: 1px solid var(--bg-tertiary);
+    }
+}

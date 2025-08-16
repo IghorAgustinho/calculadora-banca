@@ -3,68 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TECBANCAS by igr</title>
+    <title>TecBancas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>TECBANCAS</h1>
 
-        <div id="setup-container" class="card">
-            <h2>1. Configuração do Dia</h2>
-            <div class="input-group">
-                <label>Participantes do Dia:</label>
-                <div id="participants-list">
-                    <div class="participant-input"><input type="text" placeholder="Nome do participante 1"></div>
-                    <div class="participant-input"><input type="text" placeholder="Nome do participante 2"></div>
-                </div>
-                <button id="add-participant-btn" class="btn">Adicionar Participante</button>
+    <main class="app-container">
+        <header class="app-header">
+            <h1>TecBancas</h1>
+            <p>Gerenciador de bancas compartilhadas</p>
+        </header>
+
+        <section id="setup-step" class="step active">
+            <div class="step-header">
+                <h2><span>1</span>Configuração do Dia</h2>
+                <p>Adicione os nomes de todos os participantes.</p>
             </div>
-            <button id="start-day-btn" class="btn btn-primary">Iniciar Dia de Jogo</button>
-        </div>
+            <div id="participants-list" class="participant-input-list">
+                </div>
+            <div class="actions">
+                <button id="add-participant-btn" class="btn btn-secondary">Adicionar Participante</button>
+                <button id="start-day-btn" class="btn btn-primary">Iniciar Dia de Jogo</button>
+            </div>
+        </section>
 
-        <div id="game-container" class="hidden">
-            <div class="card">
-                <h2 id="session-title">Banca Atual</h2>
-                <div class="input-group">
+        <section id="game-step" class="step">
+            <div class="session-container">
+                <div class="step-header">
+                    <h2 id="session-title"></h2>
+                    <p>Preencha os dados da banca atual.</p>
+                </div>
+                
+                <div class="form-group">
                     <label for="session-host-select">Host desta Banca:</label>
-                    <select id="session-host-select" class="input-like"></select>
+                    <select id="session-host-select"></select>
                 </div>
-                <div id="current-session-players"></div>
-                <div class="input-group">
-                    <label for="final-amount">Quanto sobrou nesta banca (R$)?</label>
-                    <input type="number" id="final-amount" placeholder="Ex: 0">
+
+                <div id="current-session-players">
+                    </div>
+
+                <div class="form-group">
+                    <label for="final-amount">Valor final da banca (R$):</label>
+                    <input type="number" id="final-amount" placeholder="0.00">
                 </div>
-                <button id="end-session-btn" class="btn">Finalizar Banca e Iniciar Próxima</button>
+                
+                <button id="end-session-btn" class="btn btn-primary">Finalizar Banca</button>
             </div>
 
-            <div class="card">
-                <h2>Histórico do Dia</h2>
-                <div id="sessions-history"><p>Nenhuma banca finalizada ainda.</p></div>
-            </div>
-
-            <div class="card">
-                <h2>Gerenciamento do Dia</h2>
-                <div class="input-group">
-                    <label for="exit-player-select">Calcular saída de um jogador:</label>
-                    <div class="exit-group">
-                        <select id="exit-player-select" class="input-like"></select>
-                        <button id="calculate-exit-btn" class="btn">Calcular Saída</button>
+            <div class="sidebar">
+                <div class="sidebar-block">
+                    <h3>Histórico de Bancas</h3>
+                    <div id="sessions-history">
+                        <p class="empty-state">Nenhuma banca finalizada.</p>
                     </div>
                 </div>
-                 <button id="show-summary-btn" class="btn btn-primary">Encerrar o Dia (Resumo Final)</button>
-                 <button id="reset-day-btn" class="btn btn-secondary">Resetar Dia Inteiro</button>
-            </div>
-        </div>
 
-        <div id="modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <button id="modal-close-btn" class="modal-close">&times;</button>
-                <div id="modal-body"></div>
+                <div class="sidebar-block">
+                    <h3>Opções do Dia</h3>
+                    <div class="form-group">
+                        <label for="exit-player-select">Calcular Saída de Jogador:</label>
+                        <select id="exit-player-select"></select>
+                    </div>
+                    <button id="calculate-exit-btn" class="btn btn-secondary">Calcular Saída</button>
+                    <button id="show-summary-btn" class="btn btn-accent">Ver Resumo Final</button>
+                    <button id="reset-day-btn" class="btn btn-danger">Resetar Tudo</button>
+                </div>
             </div>
+        </section>
+
+    </main>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="modal-close-btn" class="modal-close">&times;</button>
+            <div id="modal-body"></div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
-
 </html>
