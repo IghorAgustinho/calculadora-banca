@@ -1,8 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ESTADO GLOBAL DO APLICATIVO
-    const appState = { participants: [], sessions: [], balances: {} };
+    const appState = {
+        participants: [],
+        sessions: [],
+        balances: {}, // Armazena o LUCRO/PREJUÍZO LÍQUIDO
+        investments: {} // NOVO: Armazena o TOTAL INVESTIDO por cada um
+    };
 
-    // SELETORES DE ELEMENTOS DA UI
+    // SELETORES DE ELEMENTOS DA UI (sem alterações)
     const setupStep = document.getElementById('setup-step');
     const gameStep = document.getElementById('game-step');
     const modal = document.getElementById('modal');
@@ -22,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalBody = document.getElementById('modal-body');
 
-    // --- FUNÇÕES DE CONTROLE DE VISIBILIDADE ---
+    // FUNÇÕES DE CONTROLE DE VISIBILIDADE (sem alterações)
     const switchStep = (stepToShow) => {
         setupStep.classList.remove('active');
         gameStep.classList.remove('active');
@@ -47,9 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const startDay = () => {
         const names = [...new Set(Array.from(participantsListDiv.querySelectorAll('input')).map(input => input.value.trim()).filter(Boolean))];
         if (names.length < 2) { alert('São necessários pelo menos 2 participantes.'); return; }
+        
         appState.participants = names;
         appState.sessions = [];
+        // Zera ambos os rastreadores
         appState.balances = Object.fromEntries(names.map(name => [name, 0]));
+        appState.investments = Object.fromEntries(names.map(name => [name, 0]));
+
         switchStep('game');
         updatePlayerDropdowns();
         renderCurrentSession();
@@ -68,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (value > 0) {
                 session.contributions.push({ name, value, paid });
                 session.totalInvested += value;
+                // ATUALIZA O TOTAL INVESTIDO POR JOGADOR
+                appState.investments[name] += value;
             }
         });
 
@@ -76,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         session.contributions.forEach(contrib => {
             const share = (contrib.value / session.totalInvested) * session.finalAmount;
             const profitLoss = share - contrib.value;
+            // O "balances" continua rastreando o lucro/prejuízo para os cálculos internos
             appState.balances[contrib.name] += profitLoss;
         });
 
@@ -92,26 +104,37 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     /**
-     * FUNÇÃO DE RESUMO FINAL ATUALIZADA - Exibe os saldos e um resumo descritivo das dívidas.
+     * FUNÇÃO DE RESUMO FINAL ATUALIZADA
+     * Agora mostra o valor de saque (Investimento Total + Lucro/Prejuízo Líquido)
      */
     const showFinalSummary = () => {
-        if (appState.sessions.length === 0) { alert('Nenhuma banca foi finalizada.'); return; }
+        if (Object.keys(appState.investments).length === 0 && appState.sessions.length === 0) {
+             alert('Nenhuma banca foi finalizada.');
+             return;
+        }
 
         let html = '<h2>📊 Resumo Final do Dia</h2>';
-        html += '<h3>Saldo Final de Cada Um:</h3>';
-        Object.entries(appState.balances).forEach(([name, balance]) => {
-            html += `<p>${name}: <strong class="${balance >= 0 ? 'profit' : 'loss'}">R$ ${balance.toFixed(2)}</strong></p>`;
+        html += '<h3>Saldo Final de Cada Um (Valor de Saque):</h3>';
+        
+        // Calcula e exibe o valor de saque
+        Object.keys(appState.participants).forEach(key => {
+            const name = appState.participants[key];
+            const totalInvested = appState.investments[name] || 0;
+            const netBalance = appState.balances[name] || 0;
+            const takeHomeAmount = totalInvested + netBalance;
+
+            html += `<p>${name}: <strong class="${netBalance >= 0 ? 'profit' : 'loss'}">R$ ${takeHomeAmount.toFixed(2)}</strong></p>`;
         });
+        
         html += `<hr>`;
 
-        // Novo resumo descritivo
         html += `<h3>Resumo de Ajustes (Dívidas):</h3>`;
         const adjustments = [];
         appState.sessions.forEach((session, index) => {
             session.contributions.forEach(contrib => {
                 if (!contrib.paid && contrib.name !== session.host) {
                     adjustments.push(
-                        `Na <strong>Banca #${index + 1}</strong>, o saldo de <strong>${session.host}</strong> foi aumentado em R$ ${contrib.value.toFixed(2)} pois <strong>${contrib.name}</strong> não pagou a entrada.`
+                        `Na <strong>Banca #${index + 1}</strong>, o saldo de <strong>${session.host}</strong> foi ajustado em +R$ ${contrib.value.toFixed(2)} pois <strong>${contrib.name}</strong> não pagou a entrada.`
                     );
                 }
             });
@@ -126,15 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
         showModal(html);
     };
 
-    // As funções abaixo (calculatePlayerExit, confirmPlayerExit, etc.) continuam as mesmas da versão anterior.
-    // O código omitido aqui é idêntico ao da sua versão funcional.
-    // Para garantir, o código completo está abaixo.
+    // O restante do código permanece o mesmo. Incluído abaixo para garantir.
 
     const calculateOptimalSettlements = (balances) => {
         const transactions = [];
         const balancesToSettle = JSON.parse(JSON.stringify(balances));
-        const creditors = Object.entries(balancesToSettle).filter(([_, amount]) => amount > 0);
-        const debtors = Object.entries(balancesToSettle).filter(([_, amount]) => amount < 0);
+        const creditors = Object.entries(balancesToSettle).filter(([_, amount]) => amount > 0.01);
+        const debtors = Object.entries(balancesToSettle).filter(([_, amount]) => amount < -0.01);
         while (debtors.length > 0 && creditors.length > 0) {
             const [debtorName, debtorAmount] = debtors[0];
             const [creditorName, creditorAmount] = creditors[0];
@@ -167,8 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const transactions = calculateOptimalSettlements(finalBalancesToSettle);
         let html = `<h2>Resumo de Saída para ${leavingPlayer}</h2>`;
-        const finalBalance = appState.balances[leavingPlayer] + valueInCurrentSession;
-        html += `<p>Saldo Final do Jogador: <strong class="${finalBalance >= 0 ? 'profit' : 'loss'}">R$ ${finalBalance.toFixed(2)}</strong></p><hr>`;
+        const totalInvested = appState.investments[leavingPlayer] + valueInCurrentSession;
+        const netBalance = appState.balances[leavingPlayer] + valueInCurrentSession;
+        const takeHomeAmount = totalInvested + netBalance;
+        
+        html += `<p>Valor de Saque: <strong class="${netBalance >= 0 ? 'profit' : 'loss'}">R$ ${takeHomeAmount.toFixed(2)}</strong></p><hr>`;
         html += `<h3>Acerto de Contas Sugerido:</h3>`;
         const playerTransactions = transactions.filter(t => t.includes(leavingPlayer));
         if (playerTransactions.length > 0) {
@@ -183,12 +207,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmPlayerExit = (playerName) => {
         const valueInCurrentSession = parseFloat(document.getElementById(`val-${playerName}`).value.replace(',', '.')) || 0;
         const currentHost = sessionHostSelect.value;
+        appState.investments[playerName] += valueInCurrentSession;
         appState.balances[playerName] += valueInCurrentSession;
         if (playerName !== currentHost) {
             appState.balances[currentHost] -= valueInCurrentSession;
         }
         appState.participants = appState.participants.filter(p => p !== playerName);
         delete appState.balances[playerName];
+        delete appState.investments[playerName];
         closeModal();
         updatePlayerDropdowns();
         renderCurrentSession();
