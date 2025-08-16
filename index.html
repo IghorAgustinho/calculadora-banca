@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Banca</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Calculadora de Banca Compartilhada</h1>
+
+        <div class="card">
+            <h2>Jogadores</h2>
+            <div id="players-list">
+                </div>
+            <button id="add-player-btn" class="btn">Adicionar Jogador</button>
+        </div>
+
+        <div class="card">
+            <h2>Resultado da Sessão</h2>
+            <div class="input-group">
+                <label for="final-amount">Quanto sobrou na banca (R$)?</label>
+                <input type="number" id="final-amount" placeholder="Ex: 900.50">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="calculate-btn" class="btn btn-primary">Calcular Divisão</button>
+            <button id="reset-btn" class="btn btn-secondary">Nova Sessão (Limpar)</button>
+        </div>
+
+        <div id="results-container" class="card results-hidden">
+            <h2>📊 Resumo da Sessão</h2>
+            <div id="summary"></div>
+            <div id="player-results"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
